@@ -27,21 +27,19 @@ jobs:
 
     - name: Install Salesforce CLI
       run: |
-        wget https://developer.salesforce.com/media/salesforce-cli/sfdx/channels/stable/sfdx-linux-x64.tar.xz
-        mkdir ~/sfdx
-        tar xJf sfdx-linux-x64.tar.xz -C ~/sfdx --strip-components 1
-        echo "$HOME/sfdx/bin" >> $GITHUB_PATH
-        ~/sfdx/bin/sfdx version
-
-    - name: Populate auth file with SFDX_URL secret
-      run: echo ${{ secrets[format('SFDX_{0}_URL', env.ENVIRONMENT)] }} > ./SFDX_${{ matrix.sf_org_alias }}_URL.txt
+        apt-get update
+        apt-get install -y curl git python3 
+        curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+        apt-get install -y nodejs
+        npm install --global @salesforce/cli@latest
+        sf version --verbose --json
 
     - name: Authenticate to Org
-      run: sfdx auth:sfdxurl:store -f ./SFDX_${{ matrix.sf_org_alias }}_URL.txt -s -a ${{ matrix.sf_org_alias }}
+      run: python3 ./authenticate_sf.py --alias ${{ matrix.sf_org_alias }} --url ${{ secrets[format('SFDX_{0}_URL', env.ENVIRONMENT)] }}
 
     - name: Run all tests and store test run Id
       run: |
-        sfdx apex run test --test-level RunLocalTests --result-format human > ./id.txt
+        sf apex run test --test-level RunLocalTests --result-format human > ./id.txt
         echo "$(node ./extractId.js)" > ${{ matrix.sf_org_alias }}_test_run_id.txt
 
     - name: Upload the test run Id as an artifact

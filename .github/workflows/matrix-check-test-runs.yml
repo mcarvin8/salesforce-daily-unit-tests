@@ -36,30 +36,29 @@ jobs:
         TEST_RUN_ID=$(cat ${{ matrix.sf_org_alias }}_test_run_id.txt)
         echo "TEST_RUN_ID=$TEST_RUN_ID" >> $GITHUB_ENV
     
-    - name: "Install Salesforce CLI"
+    - name: "Install Salesforce CLI and Apex Code Coverage Transformer Plugin"
       run: |
-        wget https://developer.salesforce.com/media/salesforce-cli/sfdx/channels/stable/sfdx-linux-x64.tar.xz
-        mkdir ~/sfdx
-        tar xJf sfdx-linux-x64.tar.xz -C ~/sfdx --strip-components 1
-        echo "$HOME/sfdx/bin" >> $GITHUB_PATH
-        ~/sfdx/bin/sfdx version
-    
-    - name: Populate auth file with SFDX_URL secret
-      run: echo ${{ secrets[format('SFDX_{0}_URL', env.ENVIRONMENT)] }} > ./SFDX_${{ matrix.sf_org_alias }}_URL.txt
+        apt-get update
+        apt-get install -y curl git python3 
+        curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+        apt-get install -y nodejs
+        npm install --global @salesforce/cli@latest
+        sf version --verbose --json
+        echo y | sf plugins install apex-code-coverage-transformer@1.7.4
 
     - name: Authenticate to Org
-      run: sfdx auth:sfdxurl:store -f ./SFDX_${{ matrix.sf_org_alias }}_URL.txt -s -a ${{ matrix.sf_org_alias }}
+      run: python3 ./authenticate_sf.py --alias ${{ matrix.sf_org_alias }} --url ${{ secrets[format('SFDX_{0}_URL', env.ENVIRONMENT)] }}
 
     # First, run the "get test" command just to print the output to the GitHub terminal. This way if you come back to the job, you can see the entire output
     # The second command is run so that we can put the output on a .json file, that we use to create the slack notification via a nodejs script
     # The || true command allows the command to return a success code even if the test fails, this allows us to continue running the job, which is
     # necessary so that we can send the notification
+    # This will also execute the apex-code-coverage-transformer automatically assuming the config.json is found
     - name: "Extract apex test results"
       run: |
         sf apex get test -i ${{env.TEST_RUN_ID}} || true
         sf apex get test -i ${{env.TEST_RUN_ID}} --json > result.json || true
         node parseResult.js 
-
 
     - name: Post to a Slack channel
       id: slack
