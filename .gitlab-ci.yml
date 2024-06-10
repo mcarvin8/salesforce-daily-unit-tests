@@ -1,11 +1,15 @@
+####################################################
+# When creating the scheduled pipeline in GitLab:
+# - Set variable $JOB_NAME to value 'unitTest'.
+# - Set variable $AUTH_ALIAS to the authentication alias for the org.
+# - Set variable $AUTH_URL to the authentication URL for the org (could be another CI/CD variable you have with your org creds).
+# - Set target branch to default branch (or update job rules to desired branch/tag).
+# - Update "quality" job based on your SonarQube preferences.
+####################################################
+
 stages:
   - test
   - quality
-
-# update based on the org you want to authenticate to
-variables:
-  AUTH_ALIAS: SANDBOX
-  AUTH_URL: $SANDBOX_AUTH_URL
 
 ####################################################
 # Define a container with the Salesforce CLI.
@@ -78,13 +82,6 @@ quality:
     paths:
       - .sonar/cache
   rules:
-    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH
-      changes:
-        - 'force-app/main/default/classes/*.cls'
-        - 'force-app/main/default/triggers/*.trigger'
-      variables:
-        SONAR_REF: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
-      when: on_success
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == 'schedule' && $JOB_NAME == 'unitTest'
       variables:
         SONAR_REF: $CI_COMMIT_REF_NAME
