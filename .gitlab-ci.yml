@@ -1,0 +1,56 @@
+stages:
+  - test
+  - test:postrun
+
+.salesforce-container:
+  image: ubuntu:latest
+  before_script:
+    - apt-get update
+    - apt-get install -y curl git python3
+    - curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+    - apt-get install -y nodejs
+    - npm install --global @salesforce/cli@latest
+    - sf version --verbose --json
+
+test:unit:
+  extends: .salesforce-container
+  stage: test
+  rules:
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == 'schedule' && $JOB_NAME == 'unitTest'
+      when: always
+    - when: never
+  artifacts:
+    paths:
+      - test_run_id.txt
+    expire_in: 1 day 
+  script:
+    - python3 ./authenticate_sf.py --alias SANDBOX --url $SANDBOX_AUTH_URL
+    - sf apex run test --test-level RunLocalTests --result-format human > ./id.txt
+    - echo "$(node ./extractId.js)" > ./test_run_id.txt
+  tags:
+    - aws,prd,us-west-2
+
+checkTest:
+  extends: .salesforce-container
+  stage: test:postrun
+  rules:
+    # update the delayed counter if your tests take longer than 4 hours
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == 'schedule' && $JOB_NAME == 'unitTest'
+      when: delayed
+      start_in: 4 hours
+    - when: never
+  artifacts:
+    paths:
+      - coverage.xml
+    expire_in: 1 day 
+  script:
+    - echo y | sf plugins install apex-code-coverage-transformer@1.7.4
+    - TEST_RUN_ID=$(cat test_run_id.txt)
+    - python3 ./authenticate_sf.py --alias SANDBOX --url $SANDBOX_AUTH_URL
+    # set "|| true" so job passes even if there are failed tests
+    # must re-direct output to a text file to avoid exceeding the job log limit
+    - sf apex get test --test-run-id $TEST_RUN_ID --code-coverage -r json -d "coverage" > ./results.json || true
+  dependencies:
+    - test:unit
+  tags:
+    - aws,prd,us-west-2

@@ -1,0 +1,4 @@
+{
+    "testCoverageJsonPath": "coverage/test-result-codecoverage.json",
+    "coverageXmlPath": "coverage.xml"
+}
