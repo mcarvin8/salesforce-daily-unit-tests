@@ -1,12 +1,16 @@
 stages:
   - test
   - test:postrun
+  - quality
 
 # update based on the org you want to authenticate to
 variables:
   AUTH_ALIAS: SANDBOX
   AUTH_URL: $SANDBOX_AUTH_URL
 
+####################################################
+# Define a container with the Salesforce CLI.
+####################################################
 .salesforce-container:
   image: ubuntu:latest
   before_script:
@@ -17,6 +21,9 @@ variables:
     - npm install --global @salesforce/cli@latest
     - sf version --verbose --json
 
+####################################################
+# Run all local tests in the org on a pipeline schedule with $JOB_NAME == 'unitTest'
+####################################################
 test:unit:
   extends: .salesforce-container
   stage: test
@@ -57,5 +64,43 @@ checkTest:
     - sf apex get test --test-run-id $TEST_RUN_ID --code-coverage -r json -d "coverage" > ./results.json || true
   dependencies:
     - test:unit
+  tags:
+    - aws,prd,us-west-2
+
+####################################################
+# Scan the code base with SonarQube.
+# Use "coverage.xml" created in previous jobs.
+####################################################
+quality:
+  image:
+    name: sonarsource/sonar-scanner-cli
+  stage: quality
+  cache:
+    key: $CI_JOB_NAME
+    paths:
+      - .sonar/cache
+  rules:
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH
+      changes:
+        - 'force-app/main/default/classes/*.cls'
+        - 'force-app/main/default/triggers/*.trigger'
+      variables:
+        SONAR_REF: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      when: on_success
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == 'schedule' && $JOB_NAME == 'unitTest'
+      variables:
+        SONAR_REF: $CI_COMMIT_REF_NAME
+      when: on_success
+    - when: never
+  allow_failure: true
+  variables:
+    SONAR_USER_HOME: '${CI_PROJECT_DIR}/.sonar'
+    GIT_DEPTH: '0'
+    SONAR_LOGIN: $SONAR_TOKEN
+    SONAR_HOST_URL: $SONAR_URL
+    # set to true to fail jobs which do not meet quality gate
+    SONAR_GATE: 'false'
+  script:
+    - sonar-scanner -Dsonar.qualitygate.wait=$SONAR_GATE -Dsonar.projectKey=$CI_PROJECT_PATH_SLUG -Dsonar.gitlab.ref_name=$SONAR_REF -Dsonar.gitlab.commit_sha=$CI_COMMIT_SHORT_SHA -Dsonar.coverageReportPaths=coverage.xml
   tags:
     - aws,prd,us-west-2
