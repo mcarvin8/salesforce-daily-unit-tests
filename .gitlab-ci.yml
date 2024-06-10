@@ -2,6 +2,11 @@ stages:
   - test
   - test:postrun
 
+# update based on the org you want to authenticate to
+variables:
+  AUTH_ALIAS: SANDBOX
+  AUTH_URL: $SANDBOX_AUTH_URL
+
 .salesforce-container:
   image: ubuntu:latest
   before_script:
@@ -24,7 +29,7 @@ test:unit:
       - test_run_id.txt
     expire_in: 1 day 
   script:
-    - python3 ./authenticate_sf.py --alias SANDBOX --url $SANDBOX_AUTH_URL
+    - python3 ./authenticate_sf.py --alias $AUTH_ALIAS --url $AUTH_URL
     - sf apex run test --test-level RunLocalTests --result-format human > ./id.txt
     - echo "$(node ./extractId.js)" > ./test_run_id.txt
   tags:
@@ -46,7 +51,7 @@ checkTest:
   script:
     - echo y | sf plugins install apex-code-coverage-transformer@1.7.4
     - TEST_RUN_ID=$(cat test_run_id.txt)
-    - python3 ./authenticate_sf.py --alias SANDBOX --url $SANDBOX_AUTH_URL
+    - python3 ./authenticate_sf.py --alias $AUTH_ALIAS --url $AUTH_URL
     # set "|| true" so job passes even if there are failed tests
     # must re-direct output to a text file to avoid exceeding the job log limit
     - sf apex get test --test-run-id $TEST_RUN_ID --code-coverage -r json -d "coverage" > ./results.json || true
