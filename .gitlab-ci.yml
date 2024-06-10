@@ -1,6 +1,5 @@
 stages:
   - test
-  - test:postrun
   - quality
 
 # update based on the org you want to authenticate to
@@ -42,14 +41,15 @@ test:unit:
   tags:
     - aws,prd,us-west-2
 
-checkTest:
+test:postrun:
   extends: .salesforce-container
-  stage: test:postrun
+  stage: test
   rules:
     # update the delayed counter if your tests take longer than 4 hours
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == 'schedule' && $JOB_NAME == 'unitTest'
       when: delayed
       start_in: 4 hours
+      needs: ['test:unit']
     - when: never
   artifacts:
     paths:
@@ -62,8 +62,6 @@ checkTest:
     # set "|| true" so job passes even if there are failed tests
     # must re-direct output to a text file to avoid exceeding the job log limit
     - sf apex get test --test-run-id $TEST_RUN_ID --code-coverage -r json -d "coverage" > ./results.json || true
-  dependencies:
-    - test:unit
   tags:
     - aws,prd,us-west-2
 
