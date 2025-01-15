@@ -39,7 +39,7 @@ test:unit:
       - test_run_id.txt
     expire_in: 1 day 
   script:
-    - python3 ./authenticate_sf.py --alias $AUTH_ALIAS --url $AUTH_URL
+    - echo $AUTH_URL | sf org login sfdx-url --set-default --alias $AUTH_ALIAS --sfdx-url-stdin
     - sf apex run test --test-level RunLocalTests --result-format human > ./id.txt
     - echo "$(node ./extractId.js)" > ./test_run_id.txt
   tags:
@@ -60,9 +60,9 @@ test:postrun:
       - coverage.xml
     expire_in: 1 day 
   script:
-    - echo y | sf plugins install apex-code-coverage-transformer@1.7.4
+    - echo y | sf plugins install apex-code-coverage-transformer@latest
     - TEST_RUN_ID=$(cat test_run_id.txt)
-    - python3 ./authenticate_sf.py --alias $AUTH_ALIAS --url $AUTH_URL
+    - echo $AUTH_URL | sf org login sfdx-url --set-default --alias $AUTH_ALIAS --sfdx-url-stdin
     # set "|| true" so job passes even if there are failed tests
     # must re-direct output to a text file to avoid exceeding the job log limit
     - sf apex get test --test-run-id $TEST_RUN_ID --code-coverage -r json -d "coverage" > ./results.json || true
@@ -82,10 +82,14 @@ quality:
     paths:
       - .sonar/cache
   rules:
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH
+      variables:
+        SONAR_REF: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      when: always
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == 'schedule' && $JOB_NAME == 'unitTest'
+      when: always
       variables:
         SONAR_REF: $CI_COMMIT_REF_NAME
-      when: on_success
     - when: never
   allow_failure: true
   variables:
@@ -93,9 +97,22 @@ quality:
     GIT_DEPTH: '0'
     SONAR_LOGIN: $SONAR_TOKEN
     SONAR_HOST_URL: $SONAR_URL
-    # set to true to fail jobs which do not meet quality gate
     SONAR_GATE: 'false'
   script:
-    - sonar-scanner -Dsonar.qualitygate.wait=$SONAR_GATE -Dsonar.projectKey=$CI_PROJECT_PATH_SLUG -Dsonar.gitlab.ref_name=$SONAR_REF -Dsonar.gitlab.commit_sha=$CI_COMMIT_SHORT_SHA -Dsonar.coverageReportPaths=coverage.xml
+    - |
+      if [ -f coverage.xml ]; then
+        sonar-scanner \
+          -Dsonar.qualitygate.wait=$SONAR_GATE \
+          -Dsonar.projectKey=$CI_PROJECT_PATH_SLUG \
+          -Dsonar.gitlab.ref_name=$SONAR_REF \
+          -Dsonar.gitlab.commit_sha=$CI_COMMIT_SHORT_SHA \
+          -Dsonar.coverageReportPaths=coverage.xml
+      else
+        sonar-scanner \
+          -Dsonar.qualitygate.wait=$SONAR_GATE \
+          -Dsonar.projectKey=$CI_PROJECT_PATH_SLUG \
+          -Dsonar.gitlab.ref_name=$SONAR_REF \
+          -Dsonar.gitlab.commit_sha=$CI_COMMIT_SHORT_SHA
+      fi
   tags:
     - aws,prd,us-west-2

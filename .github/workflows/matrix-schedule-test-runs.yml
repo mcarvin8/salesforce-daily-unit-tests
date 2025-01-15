@@ -35,7 +35,7 @@ jobs:
         sf version --verbose --json
 
     - name: Authenticate to Org
-      run: python3 ./authenticate_sf.py --alias ${{ matrix.sf_org_alias }} --url ${{ secrets[format('SFDX_{0}_URL', env.ENVIRONMENT)] }}
+      run: echo ${{ secrets[format('SFDX_{0}_URL', env.ENVIRONMENT)] }} | sf org login sfdx-url --set-default --alias ${{ matrix.sf_org_alias } --sfdx-url-stdin
 
     - name: Run all tests and store test run Id
       run: |

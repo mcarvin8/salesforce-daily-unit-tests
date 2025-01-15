@@ -44,10 +44,10 @@ jobs:
         apt-get install -y nodejs
         npm install --global @salesforce/cli@latest
         sf version --verbose --json
-        echo y | sf plugins install apex-code-coverage-transformer@1.7.4
+        echo y | sf plugins install apex-code-coverage-transformer@latest
 
     - name: Authenticate to Org
-      run: python3 ./authenticate_sf.py --alias ${{ matrix.sf_org_alias }} --url ${{ secrets[format('SFDX_{0}_URL', env.ENVIRONMENT)] }}
+      run: echo ${{ secrets[format('SFDX_{0}_URL', env.ENVIRONMENT)] }} | sf org login sfdx-url --set-default --alias ${{ matrix.sf_org_alias } --sfdx-url-stdin
 
     # First, run the "get test" command just to print the output to the GitHub terminal. This way if you come back to the job, you can see the entire output
     # The second command is run so that we can put the output on a .json file, that we use to create the slack notification via a nodejs script
