@@ -37,24 +37,6 @@ let summaryBlock = {
 
 slackPayload.blocks.push(summaryBlock);
 
-for(const test of tests){
-
-    if(test.Outcome == 'Fail'){
-        
-        let testText = `${test.FullName}: ${test.Message}`;
-
-        let block = {
-            type: 'section',
-            text: {
-                type: 'mrkdwn',
-                text: '`'+testText+'`'
-            }
-        }
-
-        slackPayload.blocks.push(block);
-    }
-}
-
 // Convert the object to a JSON string
 const jsonData = JSON.stringify(slackPayload); 
 
