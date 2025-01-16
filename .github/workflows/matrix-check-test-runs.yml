@@ -49,15 +49,12 @@ jobs:
     - name: Authenticate to Org
       run: echo ${{ secrets[format('SFDX_{0}_URL', env.ENVIRONMENT)] }} | sf org login sfdx-url --set-default --alias ${{ matrix.sf_org_alias } --sfdx-url-stdin
 
-    # First, run the "get test" command just to print the output to the GitHub terminal. This way if you come back to the job, you can see the entire output
-    # The second command is run so that we can put the output on a .json file, that we use to create the slack notification via a nodejs script
     # The || true command allows the command to return a success code even if the test fails, this allows us to continue running the job, which is
     # necessary so that we can send the notification
     # This will also execute the apex-code-coverage-transformer automatically assuming the config.json is found
     - name: "Extract apex test results"
       run: |
-        sf apex get test -i ${{env.TEST_RUN_ID}} || true
-        sf apex get test -i ${{env.TEST_RUN_ID}} --json > result.json || true
+        sf apex get test --test-run-id ${{env.TEST_RUN_ID}} --code-coverage -r json -d "coverage" || true
         node parseResult.js 
 
     - name: Post to a Slack channel

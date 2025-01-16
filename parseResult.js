@@ -1,8 +1,7 @@
 const fs = require('fs')
 
-let testResults = JSON.parse(fs.readFileSync('result.json'));
-let summary = testResults.result.summary;
-let tests = testResults.result.tests;
+let testResults = JSON.parse(fs.readFileSync('coverage/test-result.json'));
+let summary = testResults.summary;
 
 let slackPayload = {
     text: 'Test Runs Finished',
@@ -20,10 +19,10 @@ if (firstPart) {
 let summaryText = '';
 
 if(summary.outcome == 'Failed'){
-     summaryText = `❌   Automated unit testing for ${summary.username} (${hostname}) has *${summary.outcome}* with ${summary.testsRan} test runs and ${summary.failing} failure(s)`
+     summaryText = `❌   Automated unit testing for ${hostname} has *${summary.outcome}* with ${summary.testsRan} test runs and ${summary.failing} failure(s)`
 }
 else{
-    summaryText = `✅   Automated unit testing for ${summary.username} (${hostname}) has *${summary.outcome}* 🎉 `
+    summaryText = `✅   Automated unit testing for ${hostname} has *${summary.outcome}* 🎉 `
 }
 
 
