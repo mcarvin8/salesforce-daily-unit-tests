@@ -1,6 +1,17 @@
-const fs = require('fs')
+const fs = require('fs');
 
-let testResults = JSON.parse(fs.readFileSync('coverage/test-result.json'));
+// Get the ID from the environment variable
+const id = process.env.TEST_RUN_ID;
+
+if (!id) {
+    throw new Error('Environment variable TEST_RUN_ID is not set.');
+}
+
+// Construct the file name using the ID
+const testResultFileName = `coverage/test-result-${id}.json`;
+
+// Read the test results JSON file
+let testResults = JSON.parse(fs.readFileSync(testResultFileName));
 let summary = testResults.summary;
 
 let slackPayload = {
@@ -19,7 +30,7 @@ if (firstPart) {
 let summaryText = '';
 
 if(summary.outcome == 'Failed'){
-     summaryText = `❌   Automated unit testing for ${hostname} has *${summary.outcome}* with ${summary.testsRan} test runs and ${summary.failing} failure(s)`
+     summaryText = `❌   Automated unit testing for ${hostname}) has *${summary.outcome}* with ${summary.testsRan} test runs and ${summary.failing} failure(s)`
 }
 else{
     summaryText = `✅   Automated unit testing for ${hostname} has *${summary.outcome}* 🎉 `
