@@ -54,7 +54,7 @@ jobs:
     # This will also execute the apex-code-coverage-transformer automatically assuming the config.json is found
     - name: "Extract apex test results"
       run: |
-        sf apex get test --test-run-id ${{env.TEST_RUN_ID}} --code-coverage -r json -d "coverage" || true
+        sf apex get test --test-run-id ${{env.TEST_RUN_ID}} --code-coverage -r json -d "coverage" > result.json || true
         node parseResult.js 
 
     - name: Post to a Slack channel

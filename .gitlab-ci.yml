@@ -64,7 +64,7 @@ test:postrun:
     - TEST_RUN_ID=$(cat test_run_id.txt)
     - echo $AUTH_URL | sf org login sfdx-url --set-default --alias $AUTH_ALIAS --sfdx-url-stdin
     # set "|| true" so job passes even if there are failed tests
-    - sf apex get test --test-run-id $TEST_RUN_ID --code-coverage -r json -d "coverage" || true
+    - sf apex get test --test-run-id $TEST_RUN_ID --code-coverage -r json -d "coverage" > result.json || true
   tags:
     - aws,prd,us-west-2
 
