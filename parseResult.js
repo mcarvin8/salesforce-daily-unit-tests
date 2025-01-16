@@ -30,7 +30,7 @@ if (firstPart) {
 let summaryText = '';
 
 if(summary.outcome == 'Failed'){
-     summaryText = `❌   Automated unit testing for ${hostname}) has *${summary.outcome}* with ${summary.testsRan} test runs and ${summary.failing} failure(s)`
+     summaryText = `❌   Automated unit testing for ${hostname} has *${summary.outcome}* with ${summary.testsRan} test runs and ${summary.failing} failure(s)`
 }
 else{
     summaryText = `✅   Automated unit testing for ${hostname} has *${summary.outcome}* 🎉 `
