@@ -33,7 +33,7 @@ jobs:
     - name: Store test run Id in env variable
       run: |
         cd ${{ matrix.sf_org_alias }}_test_run_id
-        TEST_RUN_ID=$(cat ${{ matrix.sf_org_alias }}_test_run_id.txt)
+        export TEST_RUN_ID=$(cat ${{ matrix.sf_org_alias }}_test_run_id.txt)
         echo "TEST_RUN_ID=$TEST_RUN_ID" >> $GITHUB_ENV
     
     - name: "Install Salesforce CLI and Apex Code Coverage Transformer Plugin"
