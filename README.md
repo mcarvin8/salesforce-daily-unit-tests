@@ -5,3 +5,5 @@ Updates from the original:
 - Add [apex-code-coverage-transformer](https://github.com/mcarvin8/apex-code-coverage-transformer) plugin with SonarQube job.
     - This plugin also creates coverage reports in Cobertura, LCovOnly, and Clover format. The `.apexcodecovtransformer.config.json` file can be updated to create code coverage reports in those formats depending on what tool you are using for code quality.
 - Only post the test result summary instead of all failing tests. This exceeds the slack payload limit in larger orgs.
+
+See https://github.com/mcarvin8/sf-org-model-gitlab which has taken this concept and created bash scripts for these with GitLab CI/CD. The Salesforce CLI commands are slightly different to get code coverage.
